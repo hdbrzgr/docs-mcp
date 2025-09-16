@@ -16,6 +16,30 @@ dev:
 stdio:
     go run main.go -env .env
 
+# First-time OAuth setup (one-time authorization)
+oauth-setup:
+    @echo "🔐 Starting OAuth setup for Google Docs MCP Server..."
+    @echo "This will guide you through the one-time authorization process."
+    @echo ""
+    @echo "📋 Prerequisites:"
+    @echo "1. Make sure you have GOOGLE_CLIENT_SECRETS environment variable set"
+    @echo "2. Or create a .env file with GOOGLE_CLIENT_SECRETS=/path/to/client-secrets.json"
+    @echo ""
+    @echo "🚀 Starting server for OAuth authorization..."
+    go run main.go -env .env
+
+# OAuth setup with callback server (automatic redirect)
+oauth-callback:
+    @echo "🔐 Starting OAuth setup with callback server..."
+    @echo "This will use automatic browser redirect for easier authorization."
+    @echo ""
+    @echo "📋 Prerequisites:"
+    @echo "1. Make sure you have GOOGLE_CLIENT_SECRETS environment variable set"
+    @echo "2. Or create a .env file with GOOGLE_CLIENT_SECRETS=/path/to/client-secrets.json"
+    @echo ""
+    @echo "🚀 Starting server with OAuth callback..."
+    OAUTH_USE_CALLBACK=true go run main.go -env .env
+
 # Run tests
 test:
     go test ./...

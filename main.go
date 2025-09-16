@@ -31,7 +31,7 @@ func main() {
 	// Check required environment variables
 	credentialsPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	clientSecretsPath := os.Getenv("GOOGLE_CLIENT_SECRETS")
-	
+
 	missingEnvs := []string{}
 
 	// Check authentication: either service account credentials or OAuth client secrets
@@ -101,6 +101,33 @@ func main() {
 	} else {
 		fmt.Println("🔑 Using OAuth Client Secrets authentication")
 		fmt.Printf("📄 Client secrets file: %s\n", clientSecretsPath)
+
+		// Check if this is a first run (no token.json file exists)
+		tokenPath := os.Getenv("GOOGLE_TOKEN_PATH")
+		if tokenPath == "" {
+			tokenPath = "token.json"
+		}
+
+		if _, err := os.Stat(tokenPath); os.IsNotExist(err) {
+			fmt.Println()
+			fmt.Println("🚀 First Run Detected!")
+			fmt.Println("This appears to be your first time running the server with OAuth authentication.")
+			fmt.Println("You will need to authorize the app to access your Google account.")
+			fmt.Println()
+			fmt.Println("📋 What will happen next:")
+			fmt.Println("1. The server will start a temporary callback server")
+			fmt.Println("2. You'll be prompted to visit a Google authorization URL")
+			fmt.Println("3. You'll log in and grant permissions in your browser")
+			fmt.Println("4. Google will redirect back to the callback server automatically")
+			fmt.Println("5. A token.json file will be created for future use")
+			fmt.Println()
+			fmt.Println("⚠️  Important: This is a one-time setup process.")
+			fmt.Println("   After this, the server will use the saved token automatically.")
+			fmt.Println()
+
+			// Enable callback mode for OAuth
+			os.Setenv("OAUTH_USE_CALLBACK", "true")
+		}
 	}
 
 	mcpServer := server.NewMCPServer(
@@ -150,6 +177,16 @@ func main() {
 			log.Fatalf("❌ Server error: %v", err)
 		}
 	} else {
+		fmt.Println()
+		fmt.Println("🚀 Starting Google Docs MCP Server in stdio mode...")
+		fmt.Println("📡 Server is ready and awaiting MCP client connection via stdio")
+		fmt.Println()
+		fmt.Println("💡 Tips:")
+		fmt.Println("- The server is now running and ready to handle MCP requests")
+		fmt.Println("- You can stop the server with Ctrl+C")
+		fmt.Println("- If this was your first run, check that token.json was created successfully")
+		fmt.Println()
+
 		if err := server.ServeStdio(mcpServer); err != nil && !isContextCanceled(err) {
 			log.Fatalf("❌ Server error: %v", err)
 		}

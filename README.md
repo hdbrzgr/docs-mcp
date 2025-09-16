@@ -83,6 +83,76 @@ A comprehensive Go-based MCP (Model Context Protocol) server for Google Docs tha
    export GOOGLE_CLIENT_SECRETS=/path/to/client-secrets.json
    ```
 
+##### First-Time OAuth Authorization (One-Time Setup)
+
+When using OAuth2 authentication, you need to authorize the app once to access your Google account. The server automatically detects if `token.json` is missing and guides you through the authorization process.
+
+**Automatic Callback Flow (Recommended):**
+
+1. **Run the server** for the first time:
+   ```bash
+   # Using just (recommended)
+   just oauth-callback
+   
+   # Or manually
+   go run main.go -env .env
+   ```
+
+2. **Follow the automatic authorization flow**:
+   - The server will start a temporary callback server on port 8080
+   - You'll see a Google authorization URL in the terminal
+   - Click the URL or copy it to your browser
+   - Log in with your Google account
+   - Click "Allow" or "Grant" to authorize the app
+   - Google will automatically redirect back to the callback server
+   - You'll see a success page in your browser
+   - The server will automatically exchange the code for a token
+
+3. **Success!** The server will:
+   - Exchange the authorization code for an access token
+   - Save the token to `token.json` for future use
+   - Display a security warning about protecting the token file
+   - Continue starting the MCP server
+
+**Manual Code Entry Flow (Alternative):**
+
+If you prefer manual code entry or the callback server doesn't work:
+
+1. **Run with manual flow**:
+   ```bash
+   # Using just
+   just oauth-setup
+   
+   # Or manually (callback is disabled by default)
+   go run main.go -env .env
+   ```
+
+2. **Follow the manual authorization flow**:
+   - Copy the Google authorization URL to your browser
+   - Log in and authorize the app
+   - After authorization, your browser will redirect to `http://localhost`
+   - Copy the authorization code from the URL (the long string after `code=` and before `&scope`)
+   - Paste the code back into the terminal
+
+**Configuration Options:**
+
+You can control the OAuth flow with environment variables:
+
+```bash
+# Enable automatic callback flow
+OAUTH_USE_CALLBACK=true
+
+# Set callback server port (default: 8080)
+OAUTH_CALLBACK_PORT=8080
+
+# Set token file path (default: token.json)
+GOOGLE_TOKEN_PATH=/path/to/token.json
+```
+
+**Security Note**: The `token.json` file contains your access credentials. Keep it secure and never commit it to version control (it's already in `.gitignore`).
+
+After this one-time setup, the server will automatically use the saved token for future runs.
+
 ### Step 2: Installation
 
 #### 🐳 Docker (Recommended)
