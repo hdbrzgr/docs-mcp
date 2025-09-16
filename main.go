@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hdbrzgr/docs-mcp/services"
 	"github.com/hdbrzgr/docs-mcp/tools"
 	"github.com/joho/godotenv"
 	"github.com/mark3labs/mcp-go/server"
@@ -17,6 +18,22 @@ import (
 func main() {
 	envFile := flag.String("env", "", "Path to environment file (optional when environment variables are set directly)")
 	httpPort := flag.String("http_port", "", "Port for HTTP server. If not provided, will use stdio")
+
+	// Add usage information for environment variables
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [flags] [KEY=VALUE ...]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Flags:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nEnvironment Variables:\n")
+		fmt.Fprintf(os.Stderr, "  You can also pass environment variables as arguments in KEY=VALUE format.\n")
+		fmt.Fprintf(os.Stderr, "  Example: %s GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  Example: %s -http_port=8080 GOOGLE_CLIENT_SECRETS=/path/to/secrets.json\n", os.Args[0])
+	}
+
+	// Parse environment variables from command line arguments FIRST
+	parseEnvArgs()
+
+	// Then parse flags
 	flag.Parse()
 
 	// Load environment file if specified
@@ -83,7 +100,15 @@ func main() {
 		fmt.Println("   # OR for OAuth client:")
 		fmt.Println("   export GOOGLE_CLIENT_SECRETS=/path/to/client-secrets.json")
 		fmt.Println()
-		fmt.Println("   Option C - Using Docker:")
+		fmt.Println("   Option C - Using command line arguments:")
+		fmt.Println("   # For service account:")
+		fmt.Println("   ./docs-mcp GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json")
+		fmt.Println("   # OR for OAuth client:")
+		fmt.Println("   ./docs-mcp GOOGLE_CLIENT_SECRETS=/path/to/client-secrets.json")
+		fmt.Println("   # You can also combine with other flags:")
+		fmt.Println("   ./docs-mcp -http_port=8080 GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json")
+		fmt.Println()
+		fmt.Println("   Option D - Using Docker:")
 		fmt.Println("   # For service account:")
 		fmt.Printf("   docker run -v /path/to/credentials:/credentials \\\n")
 		fmt.Printf("              -e GOOGLE_APPLICATION_CREDENTIALS=/credentials/service-account-key.json \\\n")
@@ -186,9 +211,37 @@ func main() {
 		fmt.Println("- You can stop the server with Ctrl+C")
 		fmt.Println("- If this was your first run, check that token.json was created successfully")
 		fmt.Println()
-
+		services.GoogleDriveClient()
 		if err := server.ServeStdio(mcpServer); err != nil && !isContextCanceled(err) {
 			log.Fatalf("❌ Server error: %v", err)
+		}
+	}
+}
+
+// parseEnvArgs parses environment variables from command line arguments
+// Arguments should be in the format: KEY=VALUE
+func parseEnvArgs() {
+	args := os.Args[1:] // Skip the program name
+
+	for _, arg := range args {
+		// Skip flags that start with - or --
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+
+		// Check if argument contains an equals sign (KEY=VALUE format)
+		if strings.Contains(arg, "=") {
+			parts := strings.SplitN(arg, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+
+				// Only set if not already set in environment
+				if os.Getenv(key) == "" {
+					os.Setenv(key, value)
+					fmt.Printf("✅ Set environment variable from argument: %s\n", key)
+				}
+			}
 		}
 	}
 }
